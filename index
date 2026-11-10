@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Mencegah Google / Mesin Pencari mengindeks link GitHub Anda -->
+    <meta name="robots" content="noindex, nofollow">
+    <title>LICUART PRODUCT</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- html2canvas untuk Download Gambar -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- jsPDF untuk Download PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- QRCode.js untuk Generate QR Code -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #000000; /* Dark Mode */
+            color: #ffffff;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;  
+            overflow: hidden;
+        }
+        .line-clamp-1 {
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;  
+            overflow: hidden;
+        }
+        /* Toast Animation */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: #374151;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 9999px;
+            font-size: 14px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        #productModal, #calendarModal {
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-black pb-24">
+
+    <!-- LAYAR KUNCI PRIVAT (PIN LOCK SCREEN) -->
+    <div id="authModal" class="fixed inset-0 bg-black z-[100] flex flex-col justify-center items-center p-6">
+        <div class="w-full max-w-xs bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-2xl text-center">
+            <div class="w-16 h-16 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-amber-400 shadow-inner">
+                <i class="fas fa-user-shield text-2xl"></i>
+            </div>
+            <h2 class="text-lg font-extrabold text-white tracking-wide mb-1">AKSES PRIVAT</h2>
+            <p class="text-xs text-gray-400 mb-5">Masukkan PIN keamanan untuk membuka katalog toko Anda.</p>
+            
+            <form onsubmit="verifyPin(event)" class="space-y-3">
+                <input type="password" id="pinInput" placeholder="••••••" required autofocus
+                    class="w-full bg-black text-white text-center text-xl tracking-[0.5em] font-black py-3 px-4 rounded-xl border border-gray-700 focus:outline-none focus:border-amber-500">
+                <p id="pinError" class="text-[11px] text-red-400 font-medium hidden">PIN yang Anda masukkan salah!</p>
+                <button type="submit" class="w-full py-3 bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600 text-black font-extrabold rounded-xl text-xs hover:brightness-110 transition-all shadow-lg">
+                    <i class="fas fa-unlock-alt mr-1.5"></i> BUKA APLIKASI
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Top Navigation / Header -->
+    <div class="fixed top-0 left-0 right-0 bg-gray-900 border-b border-gray-800 z-40 px-4 py-3 shadow-md">
+        <div class="flex justify-between items-center mb-2 max-w-md mx-auto">
+            <h1 id="appTitle" class="text-xl font-bold tracking-wider text-white">LICUART PRODUCT</h1>
+            <div class="flex items-center gap-2">
+                <!-- Store Selector -->
+                <select id="storeSelector" onchange="changeStore()" class="bg-gray-800 text-white text-xs py-1 px-2 rounded-lg border border-gray-700 focus:outline-none focus:border-amber-500 font-bold">
+                    <option value="licuart">LICUART</option>
+                    <option value="rifath">RIFATH</option>
+                    <option value="mintvite">MINTVITE</option>
+                </select>
+                <!-- Tombol Kunci Kembali -->
+                <button onclick="lockApp()" class="bg-gray-800 hover:bg-red-950/60 text-gray-400 hover:text-red-400 w-7 h-7 rounded-lg border border-gray-700 flex items-center justify-center text-xs transition-colors" title="Kunci Aplikasi">
+                    <i class="fas fa-lock"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Search Bar with Refresh Button -->
+        <div class="flex gap-2 max-w-md mx-auto">
+            <div class="relative flex-1">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"></i>
+                <input type="text" id="searchInput" onkeyup="handleSearch()" placeholder="Cari nama atau kode produk..." 
+                    class="w-full bg-gray-800 text-white pl-10 pr-4 py-2 rounded-full border border-gray-700 focus:outline-none focus:border-amber-500 text-sm">
+            </div>
+            <button onclick="forceRefresh()" class="bg-gray-800 w-10 h-10 rounded-full border border-gray-700 flex items-center justify-center text-gray-400 hover:text-white focus:outline-none transition-colors shadow-sm" title="Muat Ulang Data (Hapus Cache)">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div id="app-content" class="pt-28 px-4 max-w-md mx-auto">
+        <!-- Feature Hari Ini / Dino Joyo (Hanya Tampil di Mode Home) -->
+        <div id="dinoJoyoWidget" class="bg-[#13111C] border border-[#272238] p-4 rounded-3xl shadow-xl mb-6">
+            <!-- Navigasi Tab (Hari ini, Besok, Atur Tanggal) -->
+            <div class="flex items-center justify-between bg-[#1C182B] p-1.5 rounded-2xl mb-4 text-xs font-semibold">
+                <button id="btnTabToday" onclick="selectDinoTab('today')" class="flex-1 py-2 rounded-xl text-center transition-all bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow">
+                    Hari ini
+                </button>
+                <button id="btnTabTomorrow" onclick="selectDinoTab('tomorrow')" class="flex-1 py-2 rounded-xl text-center text-gray-400 hover:text-white transition-all">
+                    Besok
+                </button>
+                <button id="btnTabCustom" onclick="openCalendarModal()" type="button" class="flex-1 py-2 rounded-xl text-center text-gray-400 hover:text-white transition-all flex items-center justify-center gap-1.5">
+                    <i class="far fa-calendar-alt text-xs"></i> Atur Tanggal
+                </button>
+            </div>
+
+            <!-- Date Pill Badge -->
+            <div class="text-center mb-4">
+                <span id="dinoDateLabel" class="inline-block bg-[#241E38] text-purple-200 border border-purple-800/40 text-xs font-semibold px-4 py-1.5 rounded-full shadow-inner">
+                    Minggu, 13 September 2026
+                </span>
+            </div>
+
+            <!-- Kartu Info (Arah & Jam Joyo) -->
+            <div class="space-y-3">
+                <!-- Card 1: Arah Utama Terbaik -->
+                <div class="bg-[#1C182B]/90 border border-[#2F2946] hover:border-purple-600/50 rounded-2xl p-3.5 flex items-center justify-between transition-all">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-900/80 to-indigo-900/80 border border-purple-500/30 flex items-center justify-center text-purple-300 shadow-md">
+                            <i class="fas fa-compass text-base"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold text-purple-300/70 uppercase tracking-wider block">ARAH UTAMA TERBAIK</span>
+                            <span id="dinoArahValue" class="text-sm font-extrabold text-white block">Lor (Utara)</span>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-purple-400/60 text-xs"></i>
+                </div>
+
+                <!-- Card 2: Jam Joyo -->
+                <div class="bg-[#1C182B]/90 border border-[#2F2946] hover:border-purple-600/50 rounded-2xl p-3.5 flex items-center justify-between transition-all">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-900/80 to-indigo-900/80 border border-purple-500/30 flex items-center justify-center text-purple-300 shadow-md">
+                            <i class="fas fa-clock text-base"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold text-purple-300/70 uppercase tracking-wider block">JAM JOYO</span>
+                            <span id="dinoJamValue" class="text-sm font-extrabold text-white block">09.00 - 10.59 Pagi</span>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-purple-400/60 text-xs"></i>
+                </div>
+
+                <!-- Tombol Toggle Rincian Selengkapnya -->
+                <button id="btnToggleDinoDetails" onclick="toggleDinoDetails()" class="w-full mt-2 py-2.5 px-4 rounded-2xl bg-[#1C182B]/80 hover:bg-[#1C182B] border border-[#2F2946] text-xs font-semibold text-purple-300 flex items-center justify-between transition-all shadow-sm">
+                    <span class="flex items-center gap-2">
+                        <i class="fas fa-list-alt text-purple-400"></i>
+                        <span>Rincian Selengkapnya</span>
+                    </span>
+                    <i id="dinoDetailsChevron" class="fas fa-chevron-down text-purple-400/80 text-xs transition-transform duration-300"></i>
+                </button>
+
+                <!-- Panel Detail -->
+                <div id="dinoDetailsContainer" class="hidden mt-3 p-3.5 bg-[#1C182B]/60 border border-[#2F2946] rounded-2xl space-y-3">
+                    <!-- Rincian Bobot Arah -->
+                    <div>
+                        <span class="text-[10px] font-extrabold text-purple-300/70 uppercase tracking-wider block mb-2 flex items-center gap-1.5">
+                            <i class="fas fa-compass text-xs text-purple-400"></i> Bobot Nilai Arah Angin
+                        </span>
+                        <div id="dinoArahDetails" class="grid grid-cols-4 gap-1.5 text-center">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Rincian Jam & Status -->
+                    <div class="pt-2 border-t border-[#2F2946]">
+                        <span class="text-[10px] font-extrabold text-purple-300/70 uppercase tracking-wider block mb-2 flex items-center gap-1.5">
+                            <i class="fas fa-history text-xs text-purple-400"></i> Rincian Jadwal Jam & Status
+                        </span>
+                        <div id="dinoJamDetails" class="space-y-1.5">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="text-center py-10 hidden">
+            <i class="fas fa-circle-notch fa-spin text-3xl text-gray-500"></i>
+            <p class="mt-2 text-gray-400 text-sm">Memuat data terbaru...</p>
+        </div>
+
+        <!-- Container untuk List Produk -->
+        <div id="productList" class="flex flex-col gap-4">
+            <!-- Data produk akan dirender di sini oleh JavaScript -->
+        </div>
+    </div>
+
+    <!-- Modal Google Kalender / Custom Date Picker -->
+    <div id="calendarModal" class="fixed inset-0 bg-black/90 z-50 hidden flex-col justify-center items-center p-4 backdrop-blur-sm">
+        <div class="w-full max-w-xs bg-[#181424] border border-[#2F2946] rounded-3xl p-5 shadow-2xl relative flex flex-col">
+            <!-- Header Modal -->
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2 text-purple-400 font-bold text-sm">
+                    <i class="fab fa-google text-lg text-purple-400"></i>
+                    <span>Pilih Tanggal</span>
+                </div>
+                <button onclick="closeCalendarModal()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full bg-[#241E38] flex items-center justify-center transition-colors">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Month & Year Controls -->
+            <div class="flex justify-between items-center bg-[#201A30] px-3 py-2 rounded-2xl mb-4 border border-[#2F2946]">
+                <button onclick="changeCalendarMonth(-1)" class="text-purple-300 hover:text-white p-1.5 rounded-xl hover:bg-purple-900/40 transition-all">
+                    <i class="fas fa-chevron-left text-xs"></i>
+                </button>
+                <span id="calendarMonthYear" class="text-xs font-bold text-white tracking-wide">September 2026</span>
+                <button onclick="changeCalendarMonth(1)" class="text-purple-300 hover:text-white p-1.5 rounded-xl hover:bg-purple-900/40 transition-all">
+                    <i class="fas fa-chevron-right text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Days Header -->
+            <div class="grid grid-cols-7 gap-1 text-center mb-2 text-[10px] font-bold text-purple-300/60 uppercase">
+                <div>Min</div>
+                <div>Sen</div>
+                <div>Sel</div>
+                <div>Rab</div>
+                <div>Kam</div>
+                <div>Jum</div>
+                <div>Sab</div>
+            </div>
+
+            <!-- Calendar Days Grid -->
+            <div id="calendarDaysGrid" class="grid grid-cols-7 gap-1 mb-4">
+                <!-- Days rendered dynamically by JS -->
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-between items-center pt-3 border-t border-[#2F2946]">
+                <button onclick="selectTodayFromCalendar()" class="px-3 py-1.5 bg-[#272238] hover:bg-purple-900/50 border border-purple-500/30 text-purple-300 text-xs font-semibold rounded-xl transition-all">
+                    <i class="fas fa-calendar-day mr-1"></i> Hari Ini
+                </button>
+                <a id="btnOpenGCal" href="https://calendar.google.com" target="_blank" class="text-[10px] text-purple-400 hover:text-purple-200 flex items-center gap-1 font-medium">
+                    <i class="fas fa-external-link-alt text-[9px]"></i> Google Calendar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Download Card -->
+    <div id="productModal" class="fixed inset-0 bg-black bg-opacity-95 z-50 hidden flex-col justify-center items-center p-4">
+        <div class="w-full max-w-[310px] flex flex-col relative my-auto">
+            
+            <!-- Tombol Close Modal -->
+            <button onclick="closeProductModal()" class="absolute -top-3 -right-3 text-gray-400 hover:text-white z-10 w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center border-2 border-gray-900 shadow-xl">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+            
+            <!-- Area Capture PNG / PDF -->
+            <div id="captureArea" class="bg-white pt-4 pb-5 px-4 flex flex-col relative rounded-2xl border border-gray-200 shadow-2xl">
+                
+                <!-- 1. Garis Lengkung Atas -->
+                <div id="modalTopLine" class="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-amber-600 via-yellow-400 to-black rounded-t-2xl"></div>
+                
+                <!-- 2. Header Badges -->
+                <div class="flex justify-between items-center mt-1 mb-3">
+                    <span id="watermarkStudio" class="text-[9px] font-extrabold text-amber-300 bg-gradient-to-r from-black via-zinc-900 to-amber-950 px-2.5 py-0.5 rounded-full tracking-wider border border-amber-500/40">LICUART STUDIO</span>
+                    <span id="modalIdBadge" class="hidden text-[10px] font-bold text-gray-400 bg-gray-50 px-2.5 py-0.5 border border-gray-100 rounded-full"></span>
+                </div>
+
+                <!-- 3. Judul Produk -->
+                <h2 id="modalTitle" class="text-[15px] leading-tight font-black text-[#1a202c] text-center uppercase tracking-wide break-words font-sans mb-3 px-1">Judul Produk</h2>
+                
+                <!-- 4. Gambar Produk Utama -->
+                <div class="flex justify-center items-center mb-4 bg-gray-50 rounded-2xl p-2 border border-gray-100">
+                    <img id="modalImage" src="" alt="Product" class="w-full h-auto max-h-[260px] object-contain rounded-xl shadow-sm" onerror="this.src='https://placehold.co/300x300/1f2937/d1d5db?text=Error'">
+                </div>
+
+                <!-- 5. Kotak Info QR Code & Link -->
+                <div class="border border-gray-200 rounded-[20px] p-3 bg-white flex items-center gap-3 mb-4 shadow-sm">
+                    <!-- QR Code -->
+                    <div class="flex-shrink-0 bg-white p-0.5 flex items-center justify-center border border-gray-100 rounded-lg">
+                        <div id="modalQrCode"></div>
+                    </div>
+                    
+                    <!-- Link Info -->
+                    <div class="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                        <span class="text-[8px] font-extrabold text-gray-400 tracking-widest uppercase leading-none">PRODUCT LINK</span>
+                        <p id="modalLink" class="text-[9px] font-bold text-amber-600 break-all leading-snug my-1.5 hover:underline"></p>
+                        <span class="text-[9px] text-gray-400 italic leading-none">Scan QR code</span>
+                    </div>
+                </div>
+                
+                <!-- 6. Footer Digital Assets -->
+                <div class="pt-3 border-t border-dotted border-gray-300 text-center">
+                    <p id="watermarkFooter" class="text-[8px] font-bold text-gray-400 tracking-[0.15em] uppercase">LICUART Premium Digital Assets</p>
+                </div>
+            </div>
+            
+            <!-- Tombol Aksi Download -->
+            <div class="mt-3 flex gap-2">
+                <button id="downloadBtn" onclick="downloadProductCard(event, 'png')" class="flex-1 py-2.5 bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600 text-black font-extrabold rounded-xl text-xs hover:brightness-110 flex justify-center items-center transition-all shadow-lg border border-amber-300">
+                    <i class="fas fa-image mr-1.5"></i> Download PNG
+                </button>
+                <button id="downloadPdfBtn" onclick="downloadProductCard(event, 'pdf')" class="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-xs font-semibold hover:bg-red-700 flex justify-center items-center transition-colors shadow-lg">
+                    <i class="fas fa-file-pdf mr-1.5"></i> Download PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 z-40 px-4 py-2.5">
+        <div class="flex justify-around items-center max-w-md mx-auto">
+            <button onclick="switchMode('home')" id="nav-home" class="flex flex-col items-center text-white transition-colors">
+                <i class="fas fa-home text-lg mb-0.5"></i>
+                <span class="text-[10px]">Home</span>
+            </button>
+
+            <button onclick="switchMode('produk')" id="nav-produk" class="flex flex-col items-center text-gray-500 hover:text-white transition-colors">
+                <i class="fas fa-box text-lg mb-0.5"></i>
+                <span class="text-[10px]">Produk</span>
+            </button>
+
+            <button onclick="switchMode('edit')" id="nav-edit" class="flex flex-col items-center text-gray-500 hover:text-white transition-colors">
+                <i class="fas fa-edit text-lg mb-0.5"></i>
+                <span class="text-[10px]">Edit</span>
+            </button>
+            
+            <button onclick="openBlankEmail()" class="flex flex-col items-center text-gray-500 hover:text-white transition-colors focus:outline-none">
+                <i class="fas fa-envelope text-lg mb-0.5"></i>
+                <span class="text-[10px]">Email</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast shadow-lg border border-gray-700">Notifikasi</div>
+
+<script>
+    // ==========================================
+    // KONFIGURASI PIN KEAMANAN PRIVAT
+    // ==========================================
+    // Ubah angka PIN ini sesuai keinginan Anda (Samakan dengan SECRET_KEY di Code.gs)
+    const APP_PIN = "123456";
+
+    // ==========================================
+    // KONFIGURASI 3 TOKO & GOOGLE APPS SCRIPT
+    // ==========================================
+    const STORES = {
+        licuart: {
+            name: "LICUART",
+            url: "https://script.google.com/macros/s/AKfycbzQ9WD1Ie6HsWZ7porq9yTA3wgvJN7pFqEDCCIaiTGSiP4fJcViifJACVc7SvJJ2kg-Dw/exec",
+            emailSubject: "LICUART You made a sale on Etsy",
+            themeLine: "absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-amber-600 via-yellow-400 to-black rounded-t-2xl",
+            themeBadge: "text-[9px] font-extrabold text-amber-300 bg-gradient-to-r from-black via-zinc-900 to-amber-950 px-2.5 py-0.5 rounded-full tracking-wider border border-amber-500/40",
+            themeLink: "text-[9px] font-bold text-amber-600 break-all leading-snug my-1.5 hover:underline"
+        },
+        rifath: {
+            name: "RIFATH",
+            url: "https://script.google.com/macros/s/AKfycbxUHBrT7gf1H3JVOb6puhUmdRwGUuJvNJ831V051MKoHkhSe28dTO_e3ZoretzYu84Rrw/exec",
+            emailSubject: "Rifat You made a sale on Etsy",
+            themeLine: "absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-blue-600 via-cyan-400 to-slate-900 rounded-t-2xl",
+            themeBadge: "text-[9px] font-extrabold text-cyan-300 bg-gradient-to-r from-slate-950 via-blue-950 to-cyan-950 px-2.5 py-0.5 rounded-full tracking-wider border border-cyan-500/40",
+            themeLink: "text-[9px] font-bold text-blue-600 break-all leading-snug my-1.5 hover:underline"
+        },
+        mintvite: {
+            name: "MINTVITE",
+            url: "https://script.google.com/macros/s/AKfycbxDuvq_qD6j6MZ759VnODAY09Jzq2Kiml89Zzih45U0OYk2snv496kP4TI7LmUxZHjmIw/exec",
+            emailSubject: "MINTVITE You made a sale on Etsy",
+            themeLine: "absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-emerald-600 via-teal-400 to-teal-950 rounded-t-2xl",
+            themeBadge: "text-[9px] font-extrabold text-emerald-300 bg-gradient-to-r from-teal-950 via-emerald-950 to-green-950 px-2.5 py-0.5 rounded-full tracking-wider border border-emerald-500/40",
+            themeLink: "text-[9px] font-bold text-emerald-600 break-all leading-snug my-1.5 hover:underline"
+        }
+    };
+
+    let currentStore = 'licuart';
+    let products = [];
+    let currentMode = 'home'; // home | produk | edit
+    let currentModalTitle = ""; 
+    let currentModalProductUrl = ""; 
+
+    // ==========================================
+    // FUNGSI GANTI TOKO & REFRESH
+    // ==========================================
+    function changeStore() {
+        const selector = document.getElementById('storeSelector');
+        currentStore = selector.value;
+        const storeInfo = STORES[currentStore];
+
+        // Update Judul Header & Watermark Modal PDF/PNG
+        document.getElementById('appTitle').innerText = `${storeInfo.name} PRODUCT`;
+        document.getElementById('watermarkStudio').innerText = `${storeInfo.name} STUDIO`;
+        document.getElementById('watermarkFooter').innerText = `${storeInfo.name} Premium Digital Assets`;
+
+        // Update Tema Warna Card PDF/PNG sesuai toko
+        document.getElementById('modalTopLine').className = storeInfo.themeLine;
+        document.getElementById('watermarkStudio').className = storeInfo.themeBadge;
+        document.getElementById('modalLink').className = storeInfo.themeLink;
+
+        // Bersihkan cache toko tersebut saat berpindah agar selalu menarik data segar
+        localStorage.removeItem(`${currentStore}_products_cache`);
+        products = [];
+        fetchData(true);
+    }
+
+    function forceRefresh() {
+        localStorage.removeItem(`${currentStore}_products_cache`);
+        showToast(`Memuat ulang data ${STORES[currentStore].name}...`);
+        fetchData(true);
+    }
+
+    // ==========================================
+    // LOGIKA & DATA FITUR DINO JOYO
+    // ==========================================
+    let dinoActiveTab = 'today'; // today | tomorrow | custom
+    let customDinoDate = new Date();
+    let viewCalendarDate = new Date();
+
+    const DINO_DATA = {
+        0: { // Achad / Minggu
+            arah: "Lor (Utara)",
+            jam: "09.00 - 10.59 Pagi",
+            bobotArah: { Lor: 2, Wetan: 1, Kidul: 1, Kulon: 0 },
+            jadwalJam: [
+                { time: "07.00 - 08.59", status: "Seri" },
+                { time: "09.00 - 10.59", status: "Djoyo" },
+                { time: "11.00 - 12.59", status: "Kolo" },
+                { time: "13.00 - 15.59", status: "Kolo" },
+                { time: "16.00 - 17.59", status: "Selamat" }
+            ]
+        },
+        1: { // Senen
+            arah: "Kulon (Barat)",
+            jam: "09.00 - 10.59 Pagi",
+            bobotArah: { Kulon: 2, Wetan: 1, Lor: 1, Kidul: 0 },
+            jadwalJam: [
+                { time: "07.00 - 08.59", status: "Kolo" },
+                { time: "09.00 - 10.59", status: "Djoyo" },
+                { time: "11.00 - 12.59", status: "Selamat" },
+                { time: "13.00 - 15.59", status: "Kolo" },
+                { time: "16.00 - 17.59", status: "Seri" }
+            ]
+        },
+        2: { // Seloso
+            arah: "Kidul (Selatan)",
+            jam: "11.00 - 12.59 Siang",
+            bobotArah: { Kidul: 2, Kulon: 1, Lor: 1, Wetan: 0 },
+            jadwalJam: [
+                { time: "07.00 - 08.59", status: "Seri" },
+                { time: "09.00 - 10.59", status: "Kolo" },
+                { time: "11.00 - 12.59", status: "Djoyo" },
+                { time: "13.00 - 15.59", status: "Kolo" },
+                { time: "16.00 - 17.59", status: "Selamat" }
+            ]
+        },
+        3: { // Rebo
+            arah: "Kidul (Selatan)",
+            jam: "16.00 - 17.59 Sore",
+            bobotArah: { Kidul: 2, Kulon: 1, Lor: 1, Wetan: 0 },
+            jadwalJam: [
+                { time: "07.00 - 08.59", status: "Kolo" },
+                { time: "09.00 - 10.59", status: "Selamat" },
+                { time: "11.00 - 12.59", status: "Seri" },
+                { time: "13.00 - 15.59", status: "Kolo" },
+                { time: "16.00 - 17.59", status: "Djoyo" }
+            ]
+        },
+        4: { // Kemis
+            arah: "Kulon (Barat)",
+            jam: "11.00 - 15.59 Siang",
+            bobotArah: { Kulon: 2, Wetan: 1, Lor: 1, Kidul: 0 },
+            jadwalJam: [
+                { time: "07.00 - 08.59", status: "Seri" },
+                { time: "09.00 - 10.59", status: "Kolo" },
+                { time: "11.00 - 12.59", status: "Djoyo" },
+                { time: "13.00 - 15.59", status: "Djoyo" },
+                { time: "16.00 - 17.59", status: "Kolo" }
+            ]
+        },
+        5: { // Jumat
+            arah: "Wetan (Timur)",
+            jam: "11.00 - 12.59 Siang",
+            bobotArah: { Wetan: 2, Kidul: 1, Kulon: 1, Lor: 0 },
+            jadwalJam: [
+                { time: "07.00 - 08.59", status: "Kolo" },
+                { time: "09.00 - 10.59", status: "Selamat" },
+                { time: "11.00 - 12.59", status: "Djoyo" },
+                { time: "13.00 - 15.59", status: "Kolo" },
+                { time: "16.00 - 17.59", status: "Seri" }
+            ]
+        },
+        6: { // Setu / Sabtu
+            arah: "Lor (Utara)",
+            jam: "07.00 - 08.59 Pagi",
+            bobotArah: { Lor: 2, Wetan: 1, Kidul: 1, Kulon: 0 },
+            jadwalJam: [
+                { time: "07.00 - 08.59", status: "Djoyo" },
+                { time: "09.00 - 10.59", status: "Kolo" },
+                { time: "11.00 - 12.59", status: "Seri" },
+                { time: "13.00 - 15.59", status: "Kolo" },
+                { time: "16.00 - 17.59", status: "Seri" }
+            ]
+        }
+    };
+
+    const DAYS_ID = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    const MONTHS_ID = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+    function toggleDinoDetails() {
+        const container = document.getElementById('dinoDetailsContainer');
+        const chevron = document.getElementById('dinoDetailsChevron');
+        if (container.classList.contains('hidden')) {
+            container.classList.remove('hidden');
+            chevron.classList.add('rotate-180');
+        } else {
+            container.classList.add('hidden');
+            chevron.classList.remove('rotate-180');
+        }
+    }
+
+    function updateDinoJoyoUI() {
+        let targetDate = new Date();
+        if (dinoActiveTab === 'tomorrow') {
+            targetDate.setDate(targetDate.getDate() + 1);
+        } else if (dinoActiveTab === 'custom') {
+            targetDate = new Date(customDinoDate);
+        }
+
+        const dayIdx = targetDate.getDay();
+        const dayName = DAYS_ID[dayIdx];
+        const dateNum = targetDate.getDate();
+        const monthName = MONTHS_ID[targetDate.getMonth()];
+        const yearNum = targetDate.getFullYear();
+
+        const formattedDateStr = `${dayName}, ${dateNum} ${monthName} ${yearNum}`;
+        document.getElementById('dinoDateLabel').innerText = formattedDateStr;
+
+        const info = DINO_DATA[dayIdx];
+        if (info) {
+            document.getElementById('dinoArahValue').innerText = info.arah;
+            document.getElementById('dinoJamValue').innerText = info.jam;
+
+            const arahContainer = document.getElementById('dinoArahDetails');
+            if (arahContainer && info.bobotArah) {
+                const maxVal = Math.max(...Object.values(info.bobotArah));
+                arahContainer.innerHTML = Object.entries(info.bobotArah).map(([key, val]) => {
+                    const isTop = val === maxVal && val > 0;
+                    return `
+                        <div class="p-1.5 rounded-xl transition-all ${isTop ? 'bg-purple-600/30 border border-purple-500/50 text-white font-bold shadow-sm' : 'bg-[#13111C] border border-[#272238] text-gray-400'}">
+                            <span class="block text-[9px] uppercase tracking-wider">${key}</span>
+                            <span class="text-xs ${isTop ? 'text-purple-200' : 'text-gray-300'}">${val}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            const jamContainer = document.getElementById('dinoJamDetails');
+            if (jamContainer && info.jadwalJam) {
+                const statusBadges = {
+                    "Djoyo": "bg-emerald-900/50 text-emerald-300 border-emerald-500/40 font-bold",
+                    "Selamat": "bg-blue-900/50 text-blue-300 border-blue-500/40 font-semibold",
+                    "Seri": "bg-amber-900/50 text-amber-300 border-amber-500/40 font-medium",
+                    "Kolo": "bg-gray-800/80 text-gray-400 border-gray-700/50"
+                };
+                jamContainer.innerHTML = info.jadwalJam.map(item => `
+                    <div class="flex justify-between items-center py-1.5 px-3 rounded-xl bg-[#13111C]/80 border border-[#272238] text-[11px]">
+                        <span class="text-gray-300 font-medium">${item.time}</span>
+                        <span class="px-2 py-0.5 rounded-md text-[10px] border ${statusBadges[item.status] || 'bg-gray-800 text-gray-300'}">${item.status}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        const btnToday = document.getElementById('btnTabToday');
+        const btnTomorrow = document.getElementById('btnTabTomorrow');
+        const btnCustom = document.getElementById('btnTabCustom');
+
+        const activeClass = "flex-1 py-2 rounded-xl text-center transition-all bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow font-semibold";
+        const inactiveClass = "flex-1 py-2 rounded-xl text-center text-gray-400 hover:text-white transition-all font-medium";
+
+        btnToday.className = dinoActiveTab === 'today' ? activeClass : inactiveClass;
+        btnTomorrow.className = dinoActiveTab === 'tomorrow' ? activeClass : inactiveClass;
+        btnCustom.className = dinoActiveTab === 'custom' 
+            ? activeClass + " flex items-center justify-center gap-1.5" 
+            : inactiveClass + " flex items-center justify-center gap-1.5";
+    }
+
+    function selectDinoTab(tab) {
+        dinoActiveTab = tab;
+        if (tab === 'custom') {
+            openCalendarModal();
+        } else {
+            updateDinoJoyoUI();
+        }
+    }
+
+    // ==========================================
+    // LOGIKA KALENDER INTERAKTIF
+    // ==========================================
+    function openCalendarModal() {
+        dinoActiveTab = 'custom';
+        viewCalendarDate = new Date(customDinoDate);
+        renderCalendar();
+        document.getElementById('calendarModal').classList.remove('hidden');
+        document.getElementById('calendarModal').classList.add('flex');
+    }
+
+    function closeCalendarModal() {
+        document.getElementById('calendarModal').classList.add('hidden');
+        document.getElementById('calendarModal').classList.remove('flex');
+        updateDinoJoyoUI();
+    }
+
+    function changeCalendarMonth(delta) {
+        viewCalendarDate.setMonth(viewCalendarDate.getMonth() + delta);
+        renderCalendar();
+    }
+
+    function renderCalendar() {
+        const year = viewCalendarDate.getFullYear();
+        const month = viewCalendarDate.getMonth();
+
+        document.getElementById('calendarMonthYear').innerText = `${MONTHS_ID[month]} ${year}`;
+
+        const grid = document.getElementById('calendarDaysGrid');
+        grid.innerHTML = '';
+
+        const firstDayIndex = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        const today = new Date();
+        const isCurrentMonthToday = today.getFullYear() === year && today.getMonth() === month;
+
+        for (let i = 0; i < firstDayIndex; i++) {
+            const emptyCell = document.createElement('div');
+            grid.appendChild(emptyCell);
+        }
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dayCell = document.createElement('button');
+            dayCell.type = "button";
+            
+            const isTodayCell = isCurrentMonthToday && today.getDate() === d;
+            const isSelectedCell = customDinoDate.getFullYear() === year && customDinoDate.getMonth() === month && customDinoDate.getDate() === d;
+
+            let cellStyle = "h-8 w-8 text-xs font-semibold rounded-xl flex items-center justify-center mx-auto transition-all ";
+            
+            if (isSelectedCell) {
+                cellStyle += "bg-purple-600 text-white font-extrabold shadow-md border border-purple-400";
+            } else if (isTodayCell) {
+                cellStyle += "bg-purple-900/60 border border-purple-500 text-purple-200 font-bold";
+            } else {
+                cellStyle += "text-gray-300 hover:bg-[#272238] hover:text-white";
+            }
+
+            dayCell.className = cellStyle;
+            dayCell.innerText = d;
+            dayCell.onclick = () => selectCalendarDate(year, month, d);
+
+            grid.appendChild(dayCell);
+        }
+    }
+
+    function selectCalendarDate(year, month, day) {
+        customDinoDate = new Date(year, month, day);
+        dinoActiveTab = 'custom';
+        closeCalendarModal();
+    }
+
+    function selectTodayFromCalendar() {
+        customDinoDate = new Date();
+        dinoActiveTab = 'today';
+        closeCalendarModal();
+    }
+
+    // ==========================================
+    // FUNGSI MENGAMBIL DATA PRODUK
+    // ==========================================
+    async function fetchData(force = false) {
+        const loading = document.getElementById('loading');
+        const productList = document.getElementById('productList');
+        const cacheKey = `${currentStore}_products_cache`;
+        const storeInfo = STORES[currentStore];
+        const urlAppsScript = storeInfo.url;
+        
+        const cachedData = localStorage.getItem(cacheKey);
+        if (cachedData && !force) {
+            try {
+                products = JSON.parse(cachedData);
+                loading.classList.add('hidden');
+                renderList();
+            } catch (e) {
+                localStorage.removeItem(cacheKey);
+            }
+        } else {
+            loading.classList.remove('hidden');
+            productList.innerHTML = ''; 
+        }
+
+        try {
+            const response = await fetch(`${urlAppsScript}?action=read&store=${currentStore}&key=${encodeURIComponent(APP_PIN)}`);
+            const text = await response.text();
+            
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch (jsonErr) {
+                console.warn("Response is not JSON:", text);
+                showToast("Akses Apps Script bermasalah (Ubah izin ke 'Anyone').");
+                if (!cachedData || force) {
+                    productList.innerHTML = `
+                        <div class="bg-amber-950/60 border border-amber-500/50 text-amber-200 p-4 rounded-2xl text-xs text-center shadow-lg">
+                            <i class="fas fa-exclamation-triangle text-amber-400 text-2xl mb-2"></i>
+                            <h4 class="font-bold text-sm text-white mb-1">Gagal Membaca Data ${storeInfo.name}</h4>
+                            <p class="text-[11px] text-amber-200/80 mb-3">Pastikan Google Apps Script untuk toko <b>${storeInfo.name}</b> sudah di-Deploy dengan akses <b>Anyone (Siapa saja)</b>.</p>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            if(result.status === 'success') {
+                products = result.data || [];
+                localStorage.setItem(cacheKey, JSON.stringify(products));
+                renderList();
+                if (force) showToast(`Data ${storeInfo.name} berhasil diperbarui!`);
+            } else {
+                showToast(result.message || "Gagal memuat data dari server!");
+            }
+        } catch (error) {
+            if(!cachedData) showToast("Terjadi kesalahan jaringan.");
+            console.error("Fetch Data Error:", error);
+        } finally {
+            loading.classList.add('hidden');
+        }
+    }
+
+    // ==========================================
+    // FUNGSI RENDER TAMPILAN
+    // ==========================================
+    function renderList() {
+        const dinoWidget = document.getElementById('dinoJoyoWidget');
+        const searchInput = document.getElementById('searchInput');
+        const query = searchInput.value.toLowerCase().trim();
+
+        if(currentMode === 'home') {
+            if (dinoWidget) dinoWidget.classList.remove('hidden');
+            
+            const filteredData = query 
+                ? products.filter(p => (p.title || '').toLowerCase().includes(query) || (p.description || '').toLowerCase().includes(query)) 
+                : [];
+            
+            renderProductCards(filteredData, true);
+        } else if (currentMode === 'produk') {
+            if (dinoWidget) dinoWidget.classList.add('hidden');
+            
+            const filteredData = query 
+                ? products.filter(p => (p.title || '').toLowerCase().includes(query) || (p.description || '').toLowerCase().includes(query)) 
+                : products;
+            
+            renderProductCards(filteredData, false);
+        } else if (currentMode === 'edit') {
+            if (dinoWidget) dinoWidget.classList.add('hidden');
+            renderEditList();
+        }
+    }
+
+    function renderProductCards(dataToRender, isHomeMode) {
+        const container = document.getElementById('productList');
+        container.innerHTML = '';
+        
+        if (isHomeMode) {
+            const keyword = document.getElementById('searchInput').value.trim();
+            if (!keyword) {
+                container.innerHTML = `
+                    <div class="text-center py-6 px-4 bg-gray-900/60 rounded-2xl border border-gray-800">
+                        <i class="fas fa-search text-3xl text-gray-600 mb-2"></i>
+                        <p class="text-sm font-medium text-gray-400">Gunakan kolom pencarian di atas untuk mencari produk <b>${STORES[currentStore].name}</b>.</p>
+                    </div>
+                `;
+                return;
+            } else if (dataToRender.length === 0) {
+                container.innerHTML = `<p class="text-center text-gray-500 mt-6">Produk "${keyword}" tidak ditemukan di ${STORES[currentStore].name}.</p>`;
+                return;
+            }
+        } else {
+            if (dataToRender.length === 0) {
+                container.innerHTML = `<p class="text-center text-gray-500 mt-10">Tidak ada produk ditemukan di ${STORES[currentStore].name}.</p>`;
+                return;
+            }
+        }
+
+        dataToRender.forEach(item => {
+            const imgSrc = item.imageUrl ? item.imageUrl : 'https://placehold.co/150x150/1f2937/9ca3af?text=No+Image';
+            
+            const safeTitle = encodeURIComponent(item.title || '').replace(/'/g, "%27");
+            const safeDesc = encodeURIComponent(item.description || '').replace(/'/g, "%27");
+            const safeImageUrl = encodeURIComponent(item.imageUrl || '');
+            const safeProductUrl = encodeURIComponent(item.productUrl || 'https://canva.com');
+            
+            const card = document.createElement('div');
+            card.className = "bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-800";
+            
+            card.innerHTML = `
+                <div class="flex gap-4 items-start">
+                    <div class="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" 
+                         onclick="openProductModal('${safeTitle}', '${safeImageUrl}', '${safeProductUrl}')">
+                        <img src="${imgSrc}" alt="Product Image" class="w-24 h-24 object-cover rounded-lg border border-gray-700 bg-gray-800" onerror="this.src='https://placehold.co/150x150/1f2937/9ca3af?text=Error'">
+                    </div>
+                    
+                    <div class="flex-1 min-w-0 flex flex-col gap-1">
+                        <!-- Header Baris 1: Judul, Tombol Salin Link & Salin Judul -->
+                        <div class="flex justify-between items-start gap-2">
+                            <h3 class="font-bold text-white text-sm leading-snug break-words">${item.title || '-'}</h3>
+                            <div class="flex gap-2.5 flex-shrink-0 mt-0.5 items-center">
+                                <button onclick="copyText(decodeURIComponent('${safeProductUrl}'), 'Link Produk')" class="text-amber-500 hover:text-amber-400 focus:outline-none" title="Salin Link Produk">
+                                    <i class="fas fa-link"></i>
+                                </button>
+                                <button onclick="copyText(decodeURIComponent('${safeTitle}'), 'Judul')" class="text-gray-500 hover:text-white focus:outline-none" title="Salin Judul">
+                                    <i class="far fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Header Baris 2: Deskripsi dan Tombol Copy & Share Email -->
+                        <div class="flex justify-between items-start gap-2 mt-1">
+                            <p class="text-xs text-gray-400 leading-relaxed line-clamp-3 break-words">${item.description || '-'}</p>
+                            <div class="flex gap-2.5 flex-shrink-0 mt-0.5 items-center">
+                                <button onclick="copyText(decodeURIComponent('${safeDesc}'), 'Deskripsi')" class="text-gray-500 hover:text-white focus:outline-none" title="Salin Deskripsi">
+                                    <i class="far fa-copy"></i>
+                                </button>
+                                <button onclick="shareViaEmail(decodeURIComponent('${safeDesc}'))" class="text-gray-500 hover:text-white focus:outline-none" title="Bagikan via Email">
+                                    <i class="fas fa-share-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function renderEditList() {
+        const container = document.getElementById('productList');
+        container.innerHTML = `
+            <div class="bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-800 mb-6">
+                <h3 class="font-bold text-white mb-3 text-sm">Tambah Produk Baru (${STORES[currentStore].name})</h3>
+                <form id="addForm" onsubmit="submitData(event, 'create')" class="flex flex-col gap-3">
+                    <input type="text" id="addTitle" placeholder="Judul Produk" required class="w-full bg-gray-800 text-white p-2 rounded-lg border border-gray-700 focus:border-amber-500 text-sm">
+                    <input type="url" id="addImageUrl" placeholder="URL Gambar (Link Foto)" required class="w-full bg-gray-800 text-white p-2 rounded-lg border border-gray-700 focus:border-amber-500 text-sm">
+                    <input type="url" id="addProductUrl" placeholder="URL Produk (Untuk QR Code)" required class="w-full bg-gray-800 text-white p-2 rounded-lg border border-gray-700 focus:border-amber-500 text-sm">
+                    <textarea id="addDesc" placeholder="Deskripsi Produk" required rows="3" class="w-full bg-gray-800 text-white p-2 rounded-lg border border-gray-700 focus:border-amber-500 text-sm"></textarea>
+                    <button type="submit" class="w-full bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600 text-black font-extrabold p-2 rounded-lg hover:brightness-110 text-sm border border-amber-400 transition-all">
+                        <i class="fas fa-plus mr-1"></i> Simpan Baru ke ${STORES[currentStore].name}
+                    </button>
+                </form>
+            </div>
+            <h3 class="font-bold text-gray-400 mb-3 text-sm px-1">Edit Data Tersimpan (${STORES[currentStore].name}):</h3>
+        `;
+        
+        products.forEach(item => {
+            const imgSrc = item.imageUrl ? item.imageUrl : 'https://placehold.co/150x150/1f2937/9ca3af?text=No+Image';
+            const card = document.createElement('div');
+            card.className = "bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-800";
+            card.innerHTML = `
+                <div class="flex gap-3 mb-3">
+                    <img src="${imgSrc}" class="w-16 h-16 object-cover rounded border border-gray-700 bg-gray-800" onerror="this.src='https://placehold.co/150x150/1f2937/9ca3af?text=Error'">
+                    <div class="flex-1">
+                        <p class="text-xs text-gray-400 mb-1">Baris di Sheet: ${item.rowIndex}</p>
+                        <h4 class="font-bold text-white text-sm line-clamp-1">${item.title || ''}</h4>
+                    </div>
+                </div>
+                <form onsubmit="submitData(event, 'update', ${item.rowIndex})" class="flex flex-col gap-2">
+                    <input type="text" id="editTitle_${item.rowIndex}" value="${(item.title || '').replace(/"/g, '&quot;')}" required class="w-full bg-gray-800 text-white p-2 rounded border border-gray-700 text-xs">
+                    <input type="url" id="editImage_${item.rowIndex}" value="${(item.imageUrl || '').replace(/"/g, '&quot;')}" required placeholder="URL Gambar" class="w-full bg-gray-800 text-white p-2 rounded border border-gray-700 text-xs">
+                    <input type="url" id="editProduct_${item.rowIndex}" value="${(item.productUrl || '').replace(/"/g, '&quot;')}" required placeholder="URL Produk (Untuk QR Code)" class="w-full bg-gray-800 text-white p-2 rounded border border-gray-700 text-xs">
+                    <textarea id="editDesc_${item.rowIndex}" required rows="2" class="w-full bg-gray-800 text-white p-2 rounded border border-gray-700 text-xs">${item.description || ''}</textarea>
+                    <button type="submit" class="w-full bg-gray-800 text-white font-medium p-2 rounded hover:bg-gray-700 text-xs border border-gray-600 mt-1">
+                        Update Data
+                    </button>
+                </form>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    // ==========================================
+    // FUNGSI NAVIGASI TAB
+    // ==========================================
+    function switchMode(mode) {
+        currentMode = mode;
+        
+        const navHome = document.getElementById('nav-home');
+        const navProduk = document.getElementById('nav-produk');
+        const navEdit = document.getElementById('nav-edit');
+
+        navHome.classList.replace('text-white', 'text-gray-500');
+        navProduk.classList.replace('text-white', 'text-gray-500');
+        navEdit.classList.replace('text-white', 'text-gray-500');
+        
+        if (mode === 'home') {
+            navHome.classList.replace('text-gray-500', 'text-white');
+        } else if (mode === 'produk') {
+            navProduk.classList.replace('text-gray-500', 'text-white');
+        } else if (mode === 'edit') {
+            navEdit.classList.replace('text-gray-500', 'text-white');
+        }
+        
+        renderList();
+    }
+
+    function handleSearch() {
+        if (currentMode === 'edit') return;
+        renderList();
+    }
+
+    // ==========================================
+    // FUNGSI MODAL POPUP & GENERATE CARD
+    // ==========================================
+    async function openProductModal(safeTitle, safeImageUrl, safeProductUrl) {
+        const title = decodeURIComponent(safeTitle);
+        const imageUrl = decodeURIComponent(safeImageUrl);
+        const productUrl = decodeURIComponent(safeProductUrl);
+        currentModalTitle = title;
+        currentModalProductUrl = productUrl;
+        
+        document.getElementById('modalTitle').innerText = title;
+        document.getElementById('modalLink').innerText = productUrl;
+        
+        const idBadge = document.getElementById('modalIdBadge');
+        const numberMatch = title.match(/\d+/); 
+        if (numberMatch) {
+            idBadge.innerText = "#" + numberMatch[0];
+            idBadge.classList.remove('hidden');
+        } else {
+            idBadge.classList.add('hidden');
+        }
+
+        const modalImg = document.getElementById('modalImage');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+        
+        modalImg.removeAttribute('crossorigin');
+        document.getElementById('modalImage').src = imageUrl; 
+        
+        document.getElementById('modalQrCode').innerHTML = "";
+        
+        new QRCode(document.getElementById("modalQrCode"), {
+            text: productUrl,
+            width: 75,
+            height: 75,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.M
+        });
+        
+        document.getElementById('productModal').classList.remove('hidden');
+        document.getElementById('productModal').classList.add('flex');
+        
+        if(downloadBtn) {
+            downloadBtn.innerHTML = '<i class="fas fa-image mr-1.5"></i> Download PNG';
+            downloadBtn.disabled = false;
+        }
+        if(downloadPdfBtn) {
+            downloadPdfBtn.innerHTML = '<i class="fas fa-file-pdf mr-1.5"></i> Download PDF';
+            downloadPdfBtn.disabled = false;
+        }
+    }
+
+    function closeProductModal() {
+        document.getElementById('productModal').classList.add('hidden');
+        document.getElementById('productModal').classList.remove('flex');
+    }
+
+    // ==========================================
+    // FUNGSI DOWNLOAD CARD PNG & PDF
+    // ==========================================
+    async function downloadProductCard(event, format = 'png') {
+        const captureArea = document.getElementById('captureArea');
+        const btn = event.currentTarget;
+        const originalBtnHtml = btn.innerHTML;
+        const modalImg = document.getElementById('modalImage');
+        const originalSrc = modalImg.src; 
+        
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Memproses...';
+        btn.disabled = true;
+        
+        try {
+            if (!originalSrc.startsWith('data:') && !originalSrc.includes('wsrv.nl')) {
+                const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(originalSrc)}&maxage=1d`;
+                
+                await new Promise((resolve, reject) => {
+                    const timer = setTimeout(() => reject(new Error('Proxy Timeout')), 8000); 
+                    
+                    modalImg.setAttribute('crossOrigin', 'anonymous');
+                    
+                    modalImg.onload = () => {
+                        clearTimeout(timer);
+                        resolve();
+                    };
+                    modalImg.onerror = () => {
+                        clearTimeout(timer);
+                        reject(new Error('Proxy Gagal'));
+                    };
+                    
+                    modalImg.src = proxyUrl;
+                });
+                
+                await new Promise(r => setTimeout(r, 400));
+            }
+
+            const canvas = await html2canvas(captureArea, {
+                useCORS: true,       
+                allowTaint: false, 
+                backgroundColor: "#ffffff", 
+                scale: 2             
+            });
+            
+            let safeFileName = currentModalTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            const storeName = STORES[currentStore].name;
+
+            if (format === 'pdf') {
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                const imgWidth = canvas.width;
+                const imgHeight = canvas.height;
+                
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: imgWidth > imgHeight ? 'landscape' : 'portrait',
+                    unit: 'px',
+                    format: [imgWidth, imgHeight]
+                });
+                pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+
+                if (currentModalProductUrl) {
+                    const captureRect = captureArea.getBoundingClientRect();
+                    const scaleX = imgWidth / captureRect.width;
+                    const scaleY = imgHeight / captureRect.height;
+                    
+                    const linkEl = document.getElementById('modalLink');
+                    if (linkEl) {
+                        const linkRect = linkEl.getBoundingClientRect();
+                        const linkX = (linkRect.left - captureRect.left) * scaleX;
+                        const linkY = (linkRect.top - captureRect.top) * scaleY;
+                        const linkW = linkRect.width * scaleX;
+                        const linkH = linkRect.height * scaleY;
+                        pdf.link(linkX, linkY, linkW, linkH, { url: currentModalProductUrl });
+                    }
+
+                    const qrEl = document.getElementById('modalQrCode');
+                    if (qrEl) {
+                        const qrRect = qrEl.getBoundingClientRect();
+                        const qrX = (qrRect.left - captureRect.left) * scaleX;
+                        const qrY = (qrRect.top - captureRect.top) * scaleY;
+                        const qrW = qrRect.width * scaleX;
+                        const qrH = qrRect.height * scaleY;
+                        pdf.link(qrX, qrY, qrW, qrH, { url: currentModalProductUrl });
+                    }
+                }
+
+                pdf.save(`${safeFileName}_${storeName}.pdf`);
+                showToast("Berhasil mendownload PDF dengan Link Aktif!");
+            } else {
+                const imageURL = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = `${safeFileName}_${storeName}.png`;
+                link.href = imageURL;
+                link.click(); 
+                showToast("Berhasil mendownload PNG!");
+            }
+            
+        } catch (err) {
+            console.error(`Gagal menyimpan ${format.toUpperCase()}:`, err);
+            showToast("Gagal didownload. Server sumber gambar terlalu ketat.");
+        } finally {
+            modalImg.removeAttribute('crossOrigin'); 
+            modalImg.src = originalSrc; 
+            btn.innerHTML = originalBtnHtml;
+            btn.disabled = false;
+        }
+    }
+
+    // ==========================================
+    // FUNGSI UTILITY (SHARE EMAIL, COPY, TOAST, SUBMIT)
+    // ==========================================
+    function shareViaEmail(description) {
+        const subject = STORES[currentStore].emailSubject;
+        const cleanBody = (description || '').replace(/\r?\n/g, '\r\n');
+        const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(cleanBody)}`;
+        window.location.href = mailtoUrl;
+    }
+
+    function openBlankEmail() {
+        const subject = STORES[currentStore].emailSubject;
+        window.location.href = `mailto:?subject=${encodeURIComponent(subject)}`;
+    }
+
+    window.copyText = function(text, type) {
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(type + " berhasil disalin!");
+            }).catch(err => {
+                fallbackCopyText(text, type);
+            });
+        } else {
+            fallbackCopyText(text, type);
+        }
+    };
+
+    function fallbackCopyText(text, type) {
+        const tempInput = document.createElement("textarea");
+        tempInput.value = text;
+        tempInput.style.position = "absolute";
+        tempInput.style.left = "-9999px";
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        
+        try {
+            document.execCommand("copy");
+            showToast(type + " berhasil disalin!");
+        } catch (err) {
+            showToast("Gagal menyalin " + type);
+        }
+        document.body.removeChild(tempInput);
+    }
+
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        toast.innerText = message;
+        toast.classList.add('show');
+        setTimeout(() => { toast.classList.remove('show'); }, 3000);
+    }
+
+    async function submitData(event, action, rowIndex = null) {
+        event.preventDefault();
+        const storeInfo = STORES[currentStore];
+
+        const btn = event.target.querySelector('button[type="submit"]');
+        const originalText = btn.innerText;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+        btn.disabled = true;
+
+        let title, imageUrl, productUrl, description;
+        if(action === 'create') {
+            title = document.getElementById('addTitle').value;
+            imageUrl = document.getElementById('addImageUrl').value;
+            productUrl = document.getElementById('addProductUrl').value;
+            description = document.getElementById('addDesc').value;
+        } else {
+            title = document.getElementById(`editTitle_${rowIndex}`).value;
+            imageUrl = document.getElementById(`editImage_${rowIndex}`).value;
+            productUrl = document.getElementById(`editProduct_${rowIndex}`).value;
+            description = document.getElementById(`editDesc_${rowIndex}`).value;
+        }
+
+        try {
+            const response = await fetch(storeInfo.url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ action, store: currentStore, key: APP_PIN, title, imageUrl, productUrl, description, rowIndex })
+            });
+            const text = await response.text();
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch(e) {
+                showToast("Gagal menyimpan: Akses Apps Script dibatasi (Pilih 'Anyone').");
+                return;
+            }
+            
+            if(result.status === 'success') {
+                showToast("Data berhasil disimpan!");
+                await fetchData(true); 
+            } else {
+                showToast(result.message || "Gagal menyimpan data!");
+            }
+        } catch(error) {
+            showToast("Terjadi kesalahan jaringan.");
+        } finally {
+            if(action === 'create') event.target.reset();
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    // ==========================================
+    // FUNGSI KEAMANAN AKSES PRIVAT (PIN LOCK)
+    // ==========================================
+    function checkAuth() {
+        const savedPin = sessionStorage.getItem('LICUART_AUTH_PIN') || localStorage.getItem('LICUART_AUTH_PIN');
+        if (savedPin === APP_PIN) {
+            document.getElementById('authModal').classList.add('hidden');
+            fetchData();
+        } else {
+            document.getElementById('authModal').classList.remove('hidden');
+        }
+    }
+
+    function verifyPin(e) {
+        e.preventDefault();
+        const input = document.getElementById('pinInput').value.trim();
+        const errEl = document.getElementById('pinError');
+        if (input === APP_PIN) {
+            localStorage.setItem('LICUART_AUTH_PIN', input);
+            errEl.classList.add('hidden');
+            document.getElementById('pinInput').value = '';
+            document.getElementById('authModal').classList.add('hidden');
+            showToast("Akses Privat Dibuka!");
+            fetchData();
+        } else {
+            errEl.classList.remove('hidden');
+            document.getElementById('pinInput').value = '';
+            document.getElementById('pinInput').focus();
+        }
+    }
+
+    function lockApp() {
+        localStorage.removeItem('LICUART_AUTH_PIN');
+        sessionStorage.removeItem('LICUART_AUTH_PIN');
+        products = [];
+        document.getElementById('productList').innerHTML = '';
+        document.getElementById('authModal').classList.remove('hidden');
+        showToast("Aplikasi Dikunci.");
+    }
+
+    // Jalankan aplikasi
+    updateDinoJoyoUI();
+    checkAuth();
+
+</script>
+</body>
+</html>
